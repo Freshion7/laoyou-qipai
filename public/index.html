@@ -125,13 +125,20 @@
         </div>
       </div>
 
-      <!-- 好友卡片 -->
+      <!-- 好友卡片（集成完整功能） -->
       <div class="card ranking-center-card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
           <span>👥 我的好友</span>
-          <button class="btn btn-small btn-outline" onclick="showFriends()" style="padding:4px 10px;font-size:12px;">查看全部</button>
+          <span id="friendOnlineBadge" style="font-size:11px;color:#4CAF50;font-weight:600;">0在线</span>
         </div>
-        <div id="friendCenterList" style="margin-top:12px;">
+        <!-- 标签切换 -->
+        <div style="display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid #EEE;padding-bottom:8px;">
+          <button class="friend-tab-btn active" id="friendTabList" onclick="switchFriendCardTab('list')" style="flex:1;padding:6px 4px;font-size:12px;border:none;background:transparent;cursor:pointer;border-radius:6px;font-weight:600;">好友列表</button>
+          <button class="friend-tab-btn" id="friendTabRequest" onclick="switchFriendCardTab('request')" style="flex:1;padding:6px 4px;font-size:12px;border:none;background:transparent;cursor:pointer;border-radius:6px;font-weight:600;">好友请求</button>
+          <button class="friend-tab-btn" id="friendTabAdd" onclick="switchFriendCardTab('add')" style="flex:1;padding:6px 4px;font-size:12px;border:none;background:transparent;cursor:pointer;border-radius:6px;font-weight:600;">添加好友</button>
+        </div>
+        <!-- 内容区域 -->
+        <div id="friendCardContent" style="max-height:200px;overflow-y:auto;">
           <div class="loading-spinner"></div>
         </div>
       </div>

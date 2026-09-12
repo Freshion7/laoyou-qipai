@@ -1050,3 +1050,18 @@ body.portrait-mode .orientation-tip {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ========== 好友卡片标签按钮 ========== */
+.friend-tab-btn {
+  transition: all 0.2s;
+  color: var(--text-light);
+}
+
+.friend-tab-btn:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+.friend-tab-btn.active {
+  background: var(--primary);
+  color: white;
+}

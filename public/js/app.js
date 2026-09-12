@@ -669,42 +669,202 @@ async function loadRankingCenter() {
   }
 }
 
-// ========== 好友卡片（和排行榜一样的样式） ==========
-async function loadFriendCenterList() {
-  const list = document.getElementById('friendCenterList');
-  if (!list) return;
-  list.innerHTML = '<div class="loading-spinner"></div>';
+// ========== 好友卡片（集成完整功能，无弹窗） ==========
+let currentFriendCardTab = 'list';
+
+function switchFriendCardTab(tab) {
+  currentFriendCardTab = tab;
+  // 更新标签样式
+  document.getElementById('friendTabList').className = tab === 'list' ? 'friend-tab-btn active' : 'friend-tab-btn';
+  document.getElementById('friendTabRequest').className = tab === 'request' ? 'friend-tab-btn active' : 'friend-tab-btn';
+  document.getElementById('friendTabAdd').className = tab === 'add' ? 'friend-tab-btn active' : 'friend-tab-btn';
+
+  // 加载对应内容
+  if (tab === 'list') loadFriendCardList();
+  else if (tab === 'request') loadFriendCardRequests();
+  else if (tab === 'add') showFriendCardAdd();
+}
+
+async function loadFriendCardList() {
+  const content = document.getElementById('friendCardContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading-spinner"></div>';
 
   const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
   if (!userInfo.username) {
-    list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">请先登录</p>';
+    content.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">请先登录</p>';
     return;
   }
 
   try {
     const res = await fetch(`/api/friends?username=${encodeURIComponent(userInfo.username)}`);
     const data = await res.json();
+
+    // 更新在线人数
+    const onlineCount = data.success ? data.friends.filter(f => f.online).length : 0;
+    const badge = document.getElementById('friendOnlineBadge');
+    if (badge) badge.textContent = `${onlineCount}在线`;
+
     if (!data.success || data.friends.length === 0) {
-      list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">暂无好友<br>点击"查看全部"添加好友</p>';
+      content.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;font-size:12px;">暂无好友<br>点击"添加好友"标签添加</p>';
       return;
     }
 
-    // 在线好友排在前面，只显示前5个
-    const sorted = [...data.friends].sort((a, b) => b.online - a.online).slice(0, 5);
-    list.innerHTML = sorted.map(f => `
-      <div class="ranking-item">
-        <div class="ranking-avatar" style="position:relative;">
+    // 在线好友排在前面
+    const sorted = [...data.friends].sort((a, b) => b.online - a.online);
+    content.innerHTML = sorted.map(f => `
+      <div class="ranking-item" style="padding:8px 10px;">
+        <div class="ranking-avatar" style="position:relative;font-size:22px;">
           ${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][f.avatar] || '❓'}
-          ${f.online ? '<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:#4CAF50;border-radius:50%;border:2px solid white;"></div>' : ''}
+          ${f.online ? '<div style="position:absolute;bottom:0;right:0;width:8px;height:8px;background:#4CAF50;border-radius:50%;border:1px solid white;"></div>' : ''}
         </div>
-        <div class="ranking-name" style="${f.online ? '' : 'opacity:0.5;'}">${f.nickname}</div>
-        <div class="ranking-rank">
-          ${f.online ? '<span style="color:#4CAF50;">● 在线</span>' : '<span style="color:#999;">○ 离线</span>'}
+        <div class="ranking-name" style="font-size:12px;${f.online ? '' : 'opacity:0.5;'}">${f.nickname}</div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          ${f.online ? '<span style="font-size:10px;color:#4CAF50;">在线</span>' : '<span style="font-size:10px;color:#999;">离线</span>'}
+          <button onclick="removeFriendInCard('${f.username}')" style="border:none;background:#FFE4E4;color:#FF6B6B;padding:2px 6px;border-radius:4px;font-size:10px;cursor:pointer;">删</button>
         </div>
       </div>
     `).join('');
   } catch (e) {
-    list.innerHTML = '<p style="text-align:center;color:var(--red);">获取好友列表失败</p>';
+    content.innerHTML = '<p style="text-align:center;color:var(--red);padding:20px;font-size:12px;">获取好友列表失败</p>';
+  }
+}
+
+async function loadFriendCardRequests() {
+  const content = document.getElementById('friendCardContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading-spinner"></div>';
+
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  if (!userInfo.username) return;
+
+  try {
+    const res = await fetch(`/api/friend-requests?username=${encodeURIComponent(userInfo.username)}`);
+    const data = await res.json();
+    if (!data.success || data.requests.length === 0) {
+      content.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;font-size:12px;">暂无好友请求</p>';
+      return;
+    }
+    content.innerHTML = data.requests.map(r => `
+      <div class="ranking-item" style="padding:8px 10px;">
+        <div class="ranking-avatar" style="font-size:22px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][r.avatar] || '❓'}</div>
+        <div class="ranking-name" style="font-size:12px;">${r.nickname}</div>
+        <div style="display:flex;gap:4px;">
+          <button onclick="acceptFriendInCard('${r.from}')" style="border:none;background:#4CAF50;color:white;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;">接受</button>
+          <button onclick="rejectFriendInCard('${r.from}')" style="border:none;background:#EEE;color:#666;padding:2px 8px;border-radius:4px;font-size:10px;cursor:pointer;">拒绝</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    content.innerHTML = '<p style="text-align:center;color:var(--red);padding:20px;font-size:12px;">获取好友请求失败</p>';
+  }
+}
+
+function showFriendCardAdd() {
+  const content = document.getElementById('friendCardContent');
+  if (!content) return;
+  content.innerHTML = `
+    <div style="padding:8px;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <input type="text" id="friendCardSearchInput" placeholder="输入用户名或昵称" style="flex:1;padding:8px;border:1px solid #DDD;border-radius:8px;font-size:12px;" onkeypress="if(event.key==='Enter')searchFriendInCard()">
+        <button onclick="searchFriendInCard()" style="padding:8px 12px;border:none;background:var(--primary);color:white;border-radius:8px;font-size:12px;cursor:pointer;">搜索</button>
+      </div>
+      <div id="friendCardSearchResult"></div>
+    </div>
+  `;
+}
+
+async function searchFriendInCard() {
+  const keyword = document.getElementById('friendCardSearchInput').value.trim();
+  const resultDiv = document.getElementById('friendCardSearchResult');
+  if (!keyword) {
+    resultDiv.innerHTML = '<p style="text-align:center;color:var(--text-light);font-size:12px;">请输入搜索关键词</p>';
+    return;
+  }
+  resultDiv.innerHTML = '<div class="loading-spinner"></div>';
+  try {
+    const res = await fetch(`/api/search-user?keyword=${encodeURIComponent(keyword)}`);
+    const data = await res.json();
+    if (!data.success || data.users.length === 0) {
+      resultDiv.innerHTML = '<p style="text-align:center;color:var(--text-light);font-size:12px;">未找到用户</p>';
+      return;
+    }
+    resultDiv.innerHTML = data.users.map(u => `
+      <div class="ranking-item" style="padding:8px 10px;">
+        <div class="ranking-avatar" style="font-size:22px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][u.avatar] || '❓'}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">${u.nickname}</div>
+          <div style="font-size:10px;color:var(--text-light);">${u.username}</div>
+        </div>
+        <button onclick="sendFriendRequestInCard('${u.username}')" style="border:none;background:var(--primary);color:white;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">添加</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    resultDiv.innerHTML = '<p style="text-align:center;color:var(--red);font-size:12px;">搜索失败</p>';
+  }
+}
+
+async function sendFriendRequestInCard(toUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, toUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '好友请求已发送' : (data.error || '发送失败'));
+  } catch (e) {
+    showToast('发送失败');
+  }
+}
+
+async function acceptFriendInCard(fromUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, fromUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已添加好友' : (data.error || '操作失败'));
+    if (data.success) loadFriendCardRequests();
+  } catch (e) {
+    showToast('操作失败');
+  }
+}
+
+async function rejectFriendInCard(fromUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, fromUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已拒绝' : (data.error || '操作失败'));
+    if (data.success) loadFriendCardRequests();
+  } catch (e) {
+    showToast('操作失败');
+  }
+}
+
+async function removeFriendInCard(friendUsername) {
+  if (!confirm('确定要删除这个好友吗？')) return;
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, friendUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已删除好友' : (data.error || '操作失败'));
+    if (data.success) loadFriendCardList();
+  } catch (e) {
+    showToast('操作失败');
   }
 }
 
@@ -713,22 +873,22 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('userCard')) {
       loadRankingCenter();
-      loadFriendCenterList();
+      loadFriendCardList();
       // 每30秒刷新一次
       setInterval(() => {
         loadRankingCenter();
-        loadFriendCenterList();
+        if (currentFriendCardTab === 'list') loadFriendCardList();
       }, 30000);
     }
   });
 } else {
   if (document.getElementById('userCard')) {
     loadRankingCenter();
-    loadFriendCenterList();
+    loadFriendCardList();
     // 每30秒刷新一次
     setInterval(() => {
       loadRankingCenter();
-      loadFriendCenterList();
+      if (currentFriendCardTab === 'list') loadFriendCardList();
     }, 30000);
   }
 }
