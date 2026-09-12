@@ -1,9 +1,9 @@
-# 耙耳朵麻将馆 - Render 部署配置
+# 老友棋牌 - Render 部署配置
 # 在 Render.com 上选择 "New > Web Service"，连接本仓库即可自动部署
 
 services:
   - type: web
-    name: pa-erduo-mahjong
+    name: laoyou-qipai
     runtime: node
     plan: free
     buildCommand: npm install
