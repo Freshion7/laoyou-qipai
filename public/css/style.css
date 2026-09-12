@@ -1043,3 +1043,10 @@ body.portrait-mode .orientation-tip {
   font-size: 11px;
   padding: 20px 8px;
 }
+
+/* ========== 响应式：手机端排行榜和好友卡片堆叠 ========== */
+@media (max-width: 600px) {
+  .lobby-container > div[style*="grid-template-columns:1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -669,47 +669,15 @@ async function loadRankingCenter() {
   }
 }
 
-// ========== 王者荣耀风格好友栏 ==========
-let friendSidebarVisible = true;
-
-function createFriendSidebar() {
-  // 检查是否已存在
-  if (document.getElementById('friendSidebar')) return;
-
-  const sidebar = document.createElement('div');
-  sidebar.id = 'friendSidebar';
-  sidebar.className = 'friend-sidebar';
-  sidebar.innerHTML = `
-    <button class="friend-sidebar-toggle" onclick="toggleFriendSidebar()">👥</button>
-    <div class="friend-sidebar-title">
-      <span>好友列表</span>
-      <span id="friendOnlineCount" style="color:#4CAF50;font-size:11px;">0在线</span>
-    </div>
-    <div class="friend-sidebar-list" id="friendSidebarList">
-      <div class="friend-sidebar-empty">加载中...</div>
-    </div>
-  `;
-  document.body.appendChild(sidebar);
-  loadFriendSidebar();
-  // 每30秒刷新一次
-  setInterval(loadFriendSidebar, 30000);
-}
-
-function toggleFriendSidebar() {
-  const sidebar = document.getElementById('friendSidebar');
-  if (!sidebar) return;
-  friendSidebarVisible = !friendSidebarVisible;
-  sidebar.classList.toggle('collapsed', !friendSidebarVisible);
-}
-
-async function loadFriendSidebar() {
-  const list = document.getElementById('friendSidebarList');
-  const countEl = document.getElementById('friendOnlineCount');
+// ========== 好友卡片（和排行榜一样的样式） ==========
+async function loadFriendCenterList() {
+  const list = document.getElementById('friendCenterList');
   if (!list) return;
+  list.innerHTML = '<div class="loading-spinner"></div>';
 
   const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
   if (!userInfo.username) {
-    list.innerHTML = '<div class="friend-sidebar-empty">请先登录</div>';
+    list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">请先登录</p>';
     return;
   }
 
@@ -717,58 +685,50 @@ async function loadFriendSidebar() {
     const res = await fetch(`/api/friends?username=${encodeURIComponent(userInfo.username)}`);
     const data = await res.json();
     if (!data.success || data.friends.length === 0) {
-      list.innerHTML = '<div class="friend-sidebar-empty">暂无好友<br>点击上方好友按钮添加</div>';
-      if (countEl) countEl.textContent = '0在线';
+      list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">暂无好友<br>点击"查看全部"添加好友</p>';
       return;
     }
-    const onlineFriends = data.friends.filter(f => f.online);
-    if (countEl) countEl.textContent = `${onlineFriends.length}在线`;
 
-    // 在线好友排在前面
-    const sorted = [...data.friends].sort((a, b) => b.online - a.online);
+    // 在线好友排在前面，只显示前5个
+    const sorted = [...data.friends].sort((a, b) => b.online - a.online).slice(0, 5);
     list.innerHTML = sorted.map(f => `
-      <div class="friend-sidebar-item" onclick="inviteFriendFromSidebar('${f.username}', ${f.online})">
-        <div class="friend-sidebar-avatar">
+      <div class="ranking-item">
+        <div class="ranking-avatar" style="position:relative;">
           ${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][f.avatar] || '❓'}
-          ${f.online ? '<div class="friend-sidebar-online"></div>' : ''}
+          ${f.online ? '<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:#4CAF50;border-radius:50%;border:2px solid white;"></div>' : ''}
         </div>
-        <div class="friend-sidebar-name" style="${f.online ? 'color:white;' : 'color:rgba(255,255,255,0.4);'}">${f.nickname}</div>
-        ${f.online ? '<button class="friend-sidebar-invite" onclick="event.stopPropagation();inviteFriendFromSidebar(\'' + f.username + '\', true)">邀请</button>' : ''}
+        <div class="ranking-name" style="${f.online ? '' : 'opacity:0.5;'}">${f.nickname}</div>
+        <div class="ranking-rank">
+          ${f.online ? '<span style="color:#4CAF50;">● 在线</span>' : '<span style="color:#999;">○ 离线</span>'}
+        </div>
       </div>
     `).join('');
   } catch (e) {
-    list.innerHTML = '<div class="friend-sidebar-empty">加载失败</div>';
+    list.innerHTML = '<p style="text-align:center;color:var(--red);">获取好友列表失败</p>';
   }
 }
 
-function inviteFriendFromSidebar(friendUsername, online) {
-  if (!online) {
-    showToast('该好友当前不在线');
-    return;
-  }
-  // 如果在游戏房间中，发送邀请
-  if (typeof ws !== 'undefined' && ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({
-      type: 'invite_friend',
-      payload: { friendUsername },
-    }));
-    showToast('邀请已发送');
-  } else {
-    showToast('请先进入游戏房间再邀请好友');
-  }
-}
-
-// 页面加载完成后创建好友栏
+// 页面加载完成后加载排行榜和好友卡片
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('userCard')) {
-      createFriendSidebar();
       loadRankingCenter();
+      loadFriendCenterList();
+      // 每30秒刷新一次
+      setInterval(() => {
+        loadRankingCenter();
+        loadFriendCenterList();
+      }, 30000);
     }
   });
 } else {
   if (document.getElementById('userCard')) {
-    createFriendSidebar();
     loadRankingCenter();
+    loadFriendCenterList();
+    // 每30秒刷新一次
+    setInterval(() => {
+      loadRankingCenter();
+      loadFriendCenterList();
+    }, 30000);
   }
 }

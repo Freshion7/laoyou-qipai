@@ -115,14 +115,28 @@
       <div id="roomList" style="margin-top:16px;display:none;"></div>
     </div>
 
-    <!-- 排行榜中心 -->
-    <div class="card ranking-center-card">
-      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-        <span>🏆 全服排行榜</span>
-        <button class="btn btn-small btn-outline" onclick="showRankings()" style="padding:4px 10px;font-size:12px;">查看全部</button>
+    <!-- 排行榜和好友卡片 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <!-- 排行榜中心 -->
+      <div class="card ranking-center-card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>🏆 全服排行榜</span>
+          <button class="btn btn-small btn-outline" onclick="showRankings()" style="padding:4px 10px;font-size:12px;">查看全部</button>
+        </div>
+        <div id="rankingCenterList" style="margin-top:12px;">
+          <div class="loading-spinner"></div>
+        </div>
       </div>
-      <div id="rankingCenterList" style="margin-top:12px;">
-        <div class="loading-spinner"></div>
+
+      <!-- 好友卡片 -->
+      <div class="card ranking-center-card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>👥 我的好友</span>
+          <button class="btn btn-small btn-outline" onclick="showFriends()" style="padding:4px 10px;font-size:12px;">查看全部</button>
+        </div>
+        <div id="friendCenterList" style="margin-top:12px;">
+          <div class="loading-spinner"></div>
+        </div>
       </div>
     </div>
 
