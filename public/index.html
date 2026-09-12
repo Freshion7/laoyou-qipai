@@ -36,6 +36,30 @@
       </div>
     </div>
 
+    <!-- 段位勋章卡片 -->
+    <div class="card rank-card" id="rankCard">
+      <div class="rank-card-inner">
+        <div class="rank-badge" id="rankBadge">🥉</div>
+        <div class="rank-info">
+          <div class="rank-name" id="rankName">青铜 III</div>
+          <div class="rank-stars" id="rankStars">★★★</div>
+          <div class="rank-progress">
+            <div class="rank-progress-bar" id="rankProgressBar" style="width:100%"></div>
+          </div>
+        </div>
+        <div class="rank-stats">
+          <div class="rank-stat-item">
+            <div class="rank-stat-value" id="rankGames">0</div>
+            <div class="rank-stat-label">对局</div>
+          </div>
+          <div class="rank-stat-item">
+            <div class="rank-stat-value" id="rankWinRate">0%</div>
+            <div class="rank-stat-label">胜率</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 顶部功能导航 -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
       <button class="btn btn-small btn-primary" onclick="showRankings()" style="padding:12px 8px;font-size:14px;">
@@ -89,6 +113,17 @@
         🔍 查看房间列表
       </button>
       <div id="roomList" style="margin-top:16px;display:none;"></div>
+    </div>
+
+    <!-- 排行榜中心 -->
+    <div class="card ranking-center-card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🏆 全服排行榜</span>
+        <button class="btn btn-small btn-outline" onclick="showRankings()" style="padding:4px 10px;font-size:12px;">查看全部</button>
+      </div>
+      <div id="rankingCenterList" style="margin-top:12px;">
+        <div class="loading-spinner"></div>
+      </div>
     </div>
 
     <!-- 玩法说明 -->

@@ -10,6 +10,14 @@ const { WebSocketServer } = require('ws');
 const { GameRoom, Player } = require('./server/game');
 const userStore = require('./server/userStore');
 const { getVariantList, getVariant } = require('./server/variants');
+const database = require('./server/database');
+
+// 初始化数据库（支持 Postgres 云端数据库或 JSON 文件本地存储）
+database.initDatabase().then(() => {
+  console.log('✅ 数据库初始化完成');
+}).catch(e => {
+  console.error('❌ 数据库初始化失败:', e.message);
+});
 
 const app = express();
 const server = http.createServer(app);
