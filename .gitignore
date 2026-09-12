@@ -5,3 +5,10 @@ data/
 cloudflared.exe
 screenshot*.png
 .env
+
+current_tunnel_url.txt
+user_screenshot.png
+screenshot.png
+screenshot2.png
+tunnel.log
+data/

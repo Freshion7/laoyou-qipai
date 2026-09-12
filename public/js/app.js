@@ -1,5 +1,5 @@
 /**
- * 耙耳朵麻将馆 - 大厅逻辑 v2.0
+ * 老友棋牌 - 大厅逻辑 v2.0
  * 支持账号系统 + 多玩法选择
  */
 
@@ -116,11 +116,6 @@ async function createRoom() {
     const data = await res.json();
     if (data.success) {
       currentRoomId = data.roomId;
-      document.getElementById('createdRoomCode').textContent = data.roomId;
-      const variant = variants.find(v => v.id === selectedVariant);
-      document.getElementById('createdVariant').textContent =
-        `${variant ? variant.icon + ' ' + variant.name + ' - ' + variant.subtitle : ''}`;
-      document.getElementById('roomCreatedOverlay').style.display = 'flex';
       // 保存房间信息
       sessionStorage.setItem('paerduo_room', JSON.stringify({
         roomId: data.roomId,
@@ -130,6 +125,8 @@ async function createRoom() {
         name: info.name,
         avatar: info.avatar,
       }));
+      // 直接进入游戏房间
+      window.location.href = 'game.html';
     }
   } catch (e) {
     showToast('创建房间失败，请重试');
@@ -235,4 +232,87 @@ function showToast(msg) {
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2500);
+}
+
+// ========== 排行榜 ==========
+let currentRankTab = 'public';
+
+// 显示排行榜
+async function showRankings() {
+  document.getElementById('rankingsOverlay').style.display = 'flex';
+  // 检查是否管理员，显示内部榜标签
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  if (userInfo.isAdmin) {
+    document.getElementById('internalRankTab').style.display = 'block';
+  } else {
+    document.getElementById('internalRankTab').style.display = 'none';
+  }
+  await loadRankings();
+}
+
+// 关闭排行榜
+function closeRankings() {
+  document.getElementById('rankingsOverlay').style.display = 'none';
+}
+
+// 切换排行榜标签
+async function switchRankTab(tab) {
+  currentRankTab = tab;
+  document.getElementById('publicRankTab').className = tab === 'public' ? 'chat-channel-tab active' : 'chat-channel-tab';
+  document.getElementById('internalRankTab').className = tab === 'internal' ? 'chat-channel-tab active' : 'chat-channel-tab';
+  await loadRankings();
+}
+
+// 加载排行榜
+async function loadRankings() {
+  const list = document.getElementById('rankingsList');
+  list.innerHTML = '<div class="loading-spinner"></div>';
+
+  try {
+    let url = '/api/rankings';
+    if (currentRankTab === 'internal') {
+      const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+      url = `/api/rankings/internal?username=${encodeURIComponent(userInfo.username || '')}`;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data.success) {
+      list.innerHTML = `<p style="text-align:center;color:var(--red);">${data.error || '获取排行榜失败'}</p>`;
+      return;
+    }
+
+    if (data.rankings.length === 0) {
+      list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">暂无排行数据</p>';
+      return;
+    }
+
+    // 渲染排行榜
+    list.innerHTML = data.rankings.map((p, idx) => {
+      const rankBadge = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+      const stars = p.rankIndex < 6 ? '★'.repeat(p.stars) + '☆'.repeat(p.maxStars - p.stars) : `${p.rankPoints}积分`;
+      const adminBadge = p.isAdmin ? '<span style="background:linear-gradient(135deg,#FF6B9D,#FFB347);color:white;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px;">管理员</span>' : '';
+      return `
+        <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #EEE;${idx < 3 ? 'background:linear-gradient(90deg,rgba(255,215,0,0.1),transparent);' : ''}">
+          <span style="width:40px;font-size:18px;font-weight:700;text-align:center;">${rankBadge}</span>
+          <span style="font-size:24px;margin-right:8px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][p.avatar] || '❓'}</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:600;color:var(--text-dark);">
+              ${p.nickname}${adminBadge}
+            </div>
+            <div style="font-size:11px;color:var(--text-light);">
+              ${p.rankIcon} ${p.rankName} ${stars}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px;color:var(--text-light);">${p.totalGames}场</div>
+            <div style="font-size:11px;color:var(--primary);">胜率${p.winRate}%</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = '<p style="text-align:center;color:var(--red);">获取排行榜失败</p>';
+  }
 }

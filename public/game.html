@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>耙耳朵麻将馆</title>
+  <title>老友棋牌</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
 </head>
@@ -75,6 +75,13 @@
       <!-- 自己的手牌 -->
       <div class="self-hand" id="hand0"></div>
 
+      <!-- 语音控制栏 -->
+      <div class="voice-control-bar">
+        <button class="voice-btn mic-off" id="micBtn" onclick="toggleMic()" title="开麦/关麦">🎤</button>
+        <button class="voice-btn speaker-on" id="speakerBtn" onclick="toggleSpeaker()" title="扬声器开/关">🔊</button>
+        <span class="voice-status" id="voiceStatus">语音未开启</span>
+      </div>
+
       <!-- 操作栏 -->
       <div class="action-bar" id="actionBar">
         <button class="action-btn hint-btn" id="hintBtn" onclick="showHint()">💡 提示</button>
@@ -96,6 +103,8 @@
           <span class="self-missing" id="missingSuitDisplay"></span>
         </div>
         <div class="self-tools">
+          <button class="tool-btn" onclick="toggleMusicPanel()" title="音乐">🎵</button>
+          <button class="tool-btn" id="voiceBtn" onclick="toggleVoice()" title="语音播报">🔊</button>
           <button class="tool-btn" onclick="toggleEmotePanel()" title="表情">😜</button>
           <button class="tool-btn" onclick="togglePhrasePanel()" title="方言">💬</button>
           <button class="tool-btn" onclick="serveTea()" title="喝茶">🍵</button>
@@ -160,7 +169,7 @@
   <div class="modal-overlay" id="waitingOverlay" style="display:flex;">
     <div class="modal-panel wide">
       <div class="modal-icon">⏳</div>
-      <div class="modal-title">等待玩家加入</div>
+      <div class="modal-title" id="waitingRoomName">等待玩家加入</div>
       <div class="room-code-big">
         <div class="room-code-label">房间号</div>
         <div class="room-code-value" id="waitingRoomCode">------</div>
@@ -170,7 +179,7 @@
         ✅ 准备开始
       </button>
       <button class="btn btn-green" id="addAiBtn" onclick="addAIPlayer()" style="display:none;margin-top:8px;background:linear-gradient(135deg,#9C27B0,#BA68C8);">
-        🤖 添加人机玩家（管理员）
+        🤖 添加人机玩家
       </button>
       <div class="waiting-tip" id="waitingTip">等待其他玩家加入...</div>
     </div>
@@ -218,6 +227,48 @@
         <p>• 点击「提示」可查看听牌建议</p>
       </div>
       <button class="btn btn-primary" style="margin-top:16px;" onclick="hideRules()">知道了</button>
+    </div>
+  </div>
+
+  <!-- 掷骰子弹窗 -->
+  <div class="modal-overlay" id="diceOverlay" style="display:none;">
+    <div class="dice-panel">
+      <div class="dice-title">🎲 掷骰子</div>
+      <div class="dice-container">
+        <div class="dice" id="dice1">
+          <div class="dice-face" id="diceFace1">⚀</div>
+        </div>
+        <div class="dice" id="dice2">
+          <div class="dice-face" id="diceFace2">⚀</div>
+        </div>
+      </div>
+      <div class="dice-result" id="diceResult">掷骰中...</div>
+      <div class="dice-dealer" id="diceDealer"></div>
+    </div>
+  </div>
+
+  <!-- 本地音乐选择（隐藏的input） -->
+  <input type="file" id="musicFileInput" accept="audio/*" multiple style="display:none;" onchange="handleMusicFiles(event)">
+
+  <!-- 音乐列表面板 -->
+  <div class="music-panel" id="musicPanel" style="display:none;">
+    <div class="music-panel-header">
+      <span>🎵 我的音乐</span>
+      <button class="music-close-btn" onclick="toggleMusicPanel()">✕</button>
+    </div>
+    <div class="music-panel-body">
+      <button class="btn btn-primary" style="margin-bottom:10px;" onclick="document.getElementById('musicFileInput').click()">
+        📁 选择本地音乐
+      </button>
+      <div class="music-list" id="musicList">
+        <div style="text-align:center;color:#999;padding:20px;font-size:13px;">
+          还没有添加音乐<br>点击上方按钮选择本地音乐文件
+        </div>
+      </div>
+      <div class="music-now-playing" id="musicNowPlaying" style="display:none;">
+        <span class="music-playing-icon">🎵</span>
+        <span id="musicPlayingName">未播放</span>
+      </div>
     </div>
   </div>
 

@@ -102,6 +102,30 @@ app.get('/api/room/:roomId', (req, res) => {
   res.json({ success: true, room: room.getRoomInfo() });
 });
 
+// 公开排行榜（排除管理员）
+app.get('/api/rankings', (req, res) => {
+  try {
+    const rankings = userStore.getRankings(false, 100);
+    res.json({ success: true, rankings });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
+// 内部排行榜（包含管理员，仅管理员可访问）
+app.get('/api/rankings/internal', (req, res) => {
+  try {
+    const username = req.query.username;
+    if (!username || !userStore.isAdmin(username)) {
+      return res.status(403).json({ success: false, error: '仅管理员可访问内部排行榜' });
+    }
+    const rankings = userStore.getRankings(true, 100);
+    res.json({ success: true, rankings });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 // 房间列表
 app.get('/api/rooms', (req, res) => {
   const list = [];
@@ -158,10 +182,12 @@ wss.on('connection', (ws, req) => {
           player = new Player(playerId, name, avatar);
           player.ws = ws;
           player.isAdmin = isAdmin;
+          player.username = username || null;
           room.addPlayer(player);
         } else {
           player.ws = ws; // 更新连接
           player.isAdmin = isAdmin;
+          player.username = username || player.username;
         }
 
         currentPlayer = player;
@@ -191,6 +217,7 @@ wss.on('connection', (ws, req) => {
           players: room.players.map(p => ({
             id: p.id, name: p.name, avatar: p.avatar, seat: p.seat,
             ready: p.ready, totalScore: p.totalScore, isDealer: p.isDealer,
+            rank: p.username ? userStore.getUserRank(p.username) : null,
           })),
           state: room.state,
         });
@@ -200,6 +227,7 @@ wss.on('connection', (ws, req) => {
           player: {
             id: player.id, name: player.name, avatar: player.avatar,
             seat: player.seat, ready: player.ready,
+            rank: player.username ? userStore.getUserRank(player.username) : null,
           },
         }, player.seat);
 
@@ -283,6 +311,21 @@ wss.on('connection', (ws, req) => {
         break;
       }
 
+      case 'webrtc_signal': {
+        if (!currentPlayer || !currentRoom) return;
+        const { targetSeat, signal } = payload;
+        // 转发给目标玩家
+        const targetPlayer = currentRoom.players[targetSeat];
+        if (targetPlayer && targetPlayer.ws && targetPlayer.ws.readyState === 1) {
+          targetPlayer.ws.send(JSON.stringify({
+            type: 'webrtc_signal',
+            fromSeat: currentPlayer.seat,
+            signal,
+          }));
+        }
+        break;
+      }
+
       case 'emote': {
         if (!currentPlayer || !currentRoom) return;
         const { emote } = payload;
@@ -320,11 +363,7 @@ wss.on('connection', (ws, req) => {
 
       case 'add_ai': {
         if (!currentPlayer || !currentRoom) return;
-        // 只有管理员可以添加AI
-        if (!currentPlayer.isAdmin) {
-          currentPlayer.send('error', { message: '只有管理员可以添加人机玩家' });
-          return;
-        }
+        // 所有注册玩家都可以添加人机
         if (currentRoom.players.length >= 4) {
           currentPlayer.send('error', { message: '房间已满，无法添加人机' });
           return;
@@ -393,7 +432,27 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     if (currentPlayer && currentRoom) {
       currentPlayer.ws = null;
-      // 不立即移除，等待重连
+
+      // 检查是否是房主
+      if (currentRoom.creatorId === currentPlayer.id) {
+        // 房主退出，延迟15秒检查是否重连
+        const roomId = currentRoom.roomId;
+        const playerId = currentPlayer.id;
+        setTimeout(() => {
+          const room = rooms.get(roomId);
+          if (room && !room.destroyed) {
+            const creator = room.getPlayer(playerId);
+            // 如果房主还没有重连（ws为null），自动解散房间
+            if (!creator || !creator.ws || creator.ws.readyState !== 1) {
+              room.destroy();
+              rooms.delete(roomId);
+              console.log(`[自动解散] 房主 ${playerId} 未重连，房间 ${roomId} 已自动解散`);
+            }
+          }
+        }, 15000);
+      }
+
+      // 通知其他玩家该玩家离线
       currentRoom.broadcast('player_offline', { seat: currentPlayer.seat });
     }
   });

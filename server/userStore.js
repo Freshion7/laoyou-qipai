@@ -63,6 +63,118 @@ function generateSalt() {
   return crypto.randomBytes(8).toString('hex');
 }
 
+// ========== 段位系统 ==========
+const RANKS = [
+  { name: '青铜', icon: '🥉', stars: 3, color: '#CD7F32' },
+  { name: '白银', icon: '🥈', stars: 3, color: '#C0C0C0' },
+  { name: '黄金', icon: '🥇', stars: 4, color: '#FFD700' },
+  { name: '铂金', icon: '💎', stars: 4, color: '#00CED1' },
+  { name: '钻石', icon: '💠', stars: 5, color: '#4169E1' },
+  { name: '星耀', icon: '⭐', stars: 5, color: '#9370DB' },
+  { name: '王者', icon: '👑', stars: 999, color: '#FF4500' },
+];
+
+// 初始化段位（青铜3星）
+function initRank() {
+  return {
+    rankIndex: 0,      // 青铜
+    stars: 3,          // 3星
+    rankPoints: 0,     // 王者积分
+    totalGames: 0,
+    totalWins: 0,
+    winStreak: 0,      // 连胜
+  };
+}
+
+// 更新段位（赢了加星，输了减星）
+// 新规则：赢的一方加双倍（基础2星），败的一方减一倍（1星），MVP额外加一倍（1星）
+function updateRank(userRank, isWin, fan = 1, isMVP = false) {
+  if (!userRank) userRank = initRank();
+
+  userRank.totalGames++;
+
+  if (isWin) {
+    userRank.totalWins++;
+    userRank.winStreak++;
+
+    // 计算加星数：基础2星（双倍）+ 番数加成 + MVP加成 + 连胜加成
+    let addStars = 2; // 赢的一方加双倍
+    if (fan >= 3) addStars = 3; // 高番额外加星
+    if (fan >= 5) addStars = 4;
+    if (isMVP) addStars += 1; // MVP多加一倍
+    // 3连胜额外加1星
+    if (userRank.winStreak >= 3 && userRank.rankIndex < 6) addStars += 1;
+    addStars = Math.min(addStars, 5); // 最多5星
+
+    // 王者段位只加积分
+    if (userRank.rankIndex >= 6) {
+      userRank.rankPoints += addStars * 10;
+      return userRank;
+    }
+
+    // 加星
+    userRank.stars += addStars;
+    const currentRank = RANKS[userRank.rankIndex];
+
+    // 检查是否升级
+    while (userRank.stars > currentRank.stars && userRank.rankIndex < 6) {
+      userRank.stars -= currentRank.stars;
+      userRank.rankIndex++;
+      // 升级后如果还有多余的星，继续检查
+    }
+
+    // 如果刚好满星，不升级（需要再赢一局）
+    if (userRank.stars === currentRank.stars + 1) {
+      userRank.stars = currentRank.stars;
+    }
+  } else {
+    userRank.winStreak = 0;
+
+    // 败的一方减一倍（1星）
+    let loseStars = 1;
+
+    // 王者段位减积分
+    if (userRank.rankIndex >= 6) {
+      userRank.rankPoints = Math.max(0, userRank.rankPoints - loseStars * 10);
+      return userRank;
+    }
+
+    // 减星
+    userRank.stars -= loseStars;
+
+    // 检查是否降级
+    if (userRank.stars < 0 && userRank.rankIndex > 0) {
+      userRank.rankIndex--;
+      const prevRank = RANKS[userRank.rankIndex];
+      userRank.stars = prevRank.stars - 1; // 降到上一段位的最低星-1
+      if (userRank.stars < 0) userRank.stars = 0;
+    } else if (userRank.stars < 0) {
+      userRank.stars = 0; // 青铜不会降到负星
+    }
+  }
+
+  return userRank;
+}
+
+// 获取段位信息
+function getRankInfo(userRank) {
+  if (!userRank) userRank = initRank();
+  const rank = RANKS[Math.min(userRank.rankIndex, RANKS.length - 1)];
+  return {
+    rankIndex: userRank.rankIndex,
+    rankName: rank.name,
+    rankIcon: rank.icon,
+    rankColor: rank.color,
+    stars: userRank.stars,
+    maxStars: rank.stars,
+    rankPoints: userRank.rankPoints || 0,
+    totalGames: userRank.totalGames || 0,
+    totalWins: userRank.totalWins || 0,
+    winRate: userRank.totalGames > 0 ? Math.round((userRank.totalWins / userRank.totalGames) * 100) : 0,
+    winStreak: userRank.winStreak || 0,
+  };
+}
+
 // 读取所有用户
 function loadUsers() {
   try {
@@ -113,6 +225,7 @@ function register(username, password, nickname, avatar) {
     totalWins: 0,
     totalScore: 0,
     bestFan: 0,
+    rank: initRank(), // 段位系统
   };
 
   users[username] = user;
@@ -161,6 +274,7 @@ function login(username, password) {
       totalWins: user.totalWins,
       totalScore: user.totalScore,
       bestFan: user.bestFan,
+      rank: getRankInfo(user.rank),
     },
   };
 }
@@ -176,6 +290,82 @@ function verifyToken(username, token) {
 function isAdmin(username) {
   const users = loadUsers();
   return users[username]?.isAdmin || false;
+}
+
+// 更新用户段位
+function updateUserRank(username, isWin, fan, isMVP = false) {
+  const users = loadUsers();
+  const user = users[username];
+  if (!user) return null;
+
+  if (!user.rank) user.rank = initRank();
+  user.rank = updateRank(user.rank, isWin, fan, isMVP);
+
+  // 同时更新总统计
+  user.totalGames = user.rank.totalGames;
+  user.totalWins = user.rank.totalWins;
+
+  saveUsers(users);
+  return getRankInfo(user.rank);
+}
+
+// 获取用户段位
+function getUserRank(username) {
+  const users = loadUsers();
+  const user = users[username];
+  if (!user) return getRankInfo(null);
+  return getRankInfo(user.rank);
+}
+
+// 获取排行榜
+// includeAdmin: 是否包含管理员（内部排行榜用）
+// limit: 返回数量
+function getRankings(includeAdmin = false, limit = 100) {
+  const users = loadUsers();
+  let userList = Object.values(users);
+
+  // 公开排行榜排除管理员
+  if (!includeAdmin) {
+    userList = userList.filter(u => !u.isAdmin);
+  }
+
+  // 按段位排序：段位索引高的在前，同段位按星级/积分排序
+  userList.sort((a, b) => {
+    const rankA = a.rank || initRank();
+    const rankB = b.rank || initRank();
+
+    // 先比较段位索引
+    if (rankA.rankIndex !== rankB.rankIndex) {
+      return rankB.rankIndex - rankA.rankIndex;
+    }
+
+    // 王者段位按积分排序
+    if (rankA.rankIndex >= 6) {
+      return (rankB.rankPoints || 0) - (rankA.rankPoints || 0);
+    }
+
+    // 其他段位按星级排序
+    if (rankA.stars !== rankB.stars) {
+      return rankB.stars - rankA.stars;
+    }
+
+    // 同星按胜率排序
+    const winRateA = rankA.totalGames > 0 ? rankA.totalWins / rankA.totalGames : 0;
+    const winRateB = rankB.totalGames > 0 ? rankB.totalWins / rankB.totalGames : 0;
+    return winRateB - winRateA;
+  });
+
+  return userList.slice(0, limit).map((u, idx) => {
+    const rank = getRankInfo(u.rank);
+    return {
+      rank: idx + 1,
+      username: u.username,
+      nickname: u.nickname || u.username,
+      avatar: u.avatar || 0,
+      isAdmin: u.isAdmin || false,
+      ...rank,
+    };
+  });
 }
 
 // 更新用户统计
@@ -231,4 +421,9 @@ module.exports = {
   loadUsers,
   isAdmin,
   initAdmin,
+  updateUserRank,
+  getUserRank,
+  getRankInfo,
+  getRankings,
+  RANKS,
 };

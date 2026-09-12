@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>耙耳朵麻将馆</title>
+  <title>老友棋牌</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
 </head>
@@ -17,7 +17,7 @@
     <!-- 标题 -->
     <div class="lobby-header">
       <span class="logo-emoji">🀄</span>
-      <h1 class="game-logo">耙耳朵麻将馆</h1>
+      <h1 class="game-logo">老友棋牌</h1>
       <p class="game-subtitle">多玩法支持 · Q版可爱联机</p>
     </div>
 
@@ -77,6 +77,17 @@
       <div id="roomList" style="margin-top:16px;display:none;"></div>
     </div>
 
+    <!-- 排行榜 -->
+    <div class="card">
+      <div class="card-title">🏆 段位排行榜</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
+        查看全服玩家段位排名
+      </p>
+      <button class="btn btn-primary" onclick="showRankings()">
+        🏆 查看排行榜
+      </button>
+    </div>
+
     <!-- 玩法说明 -->
     <div class="card">
       <div class="card-title">📖 玩法说明</div>
@@ -97,7 +108,25 @@
     </div>
 
     <div style="text-align:center;padding:20px;color:var(--text-light);font-size:12px;">
-      耙耳朵麻将馆 v2.0 · 多玩法支持
+      老友棋牌 v2.0 · 多玩法支持
+    </div>
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div class="dingque-overlay" id="rankingsOverlay" style="display:none;">
+    <div class="dingque-panel" style="max-width:500px;max-height:80vh;display:flex;flex-direction:column;">
+      <div style="font-size:40px;margin-bottom:8px;">🏆</div>
+      <div class="dingque-title">段位排行榜</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="chat-channel-tab active" id="publicRankTab" onclick="switchRankTab('public')">公开榜</button>
+        <button class="chat-channel-tab" id="internalRankTab" onclick="switchRankTab('internal')" style="display:none;">内部榜</button>
+      </div>
+      <div id="rankingsList" style="flex:1;overflow-y:auto;text-align:left;">
+        <div class="loading-spinner"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="closeRankings()" style="margin-top:12px;">
+        关闭
+      </button>
     </div>
   </div>
 

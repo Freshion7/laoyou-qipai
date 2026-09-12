@@ -6,10 +6,12 @@
 const mahjong = require('./mahjong');
 const { getVariant } = require('./variants');
 const { AIPlayer } = require('./aiPlayer');
+const userStore = require('./userStore');
 
 const GAME_STATE = {
   WAITING: 'waiting',     // 等待玩家
   READY: 'ready',         // 准备中
+  ROLLING: 'rolling',     // 掷骰子
   DINGQUE: 'dingque',     // 定缺阶段
   PLAYING: 'playing',     // 打牌中
   SETTLE: 'settle',       // 结算
@@ -19,6 +21,7 @@ const GAME_STATE = {
 class Player {
   constructor(id, name, avatar) {
     this.id = id;
+    this.username = null;    // 用户名（用于段位更新）
     this.name = name || '匿名玩家';
     this.avatar = avatar || Math.floor(Math.random() * 8);
     this.hand = [];           // 手牌
@@ -120,6 +123,33 @@ class GameRoom {
 
   // 开始新一局
   startRound() {
+    // 进入掷骰子阶段
+    this.state = GAME_STATE.ROLLING;
+    this.broadcast('state_change', { state: this.state });
+
+    // 庄家掷两个骰子
+    const dice1 = Math.floor(Math.random() * 6) + 1;
+    const dice2 = Math.floor(Math.random() * 6) + 1;
+    const diceSum = dice1 + dice2;
+
+    // 广播掷骰子结果
+    this.broadcast('dice_roll', {
+      dealerSeat: this.dealerSeat,
+      dice1,
+      dice2,
+      diceSum,
+      // 根据骰子点数决定起牌位置（四川麻将规则）
+      startSeat: (this.dealerSeat + (diceSum - 1) % 4) % 4,
+    });
+
+    // 3秒后发牌，进入定缺阶段
+    setTimeout(() => {
+      this.dealAndStart();
+    }, 3000);
+  }
+
+  // 发牌并开始游戏
+  dealAndStart() {
     // 重置状态
     this.deck = mahjong.shuffle(mahjong.createDeck());
     this.discardPool = [];
@@ -498,6 +528,9 @@ class GameRoom {
       maxFan: this.maxFan,
     });
 
+    // 记录胡牌番数（用于段位计算）
+    player.lastWinFan = fanResult.fan;
+
     const winScore = this.baseScore * fanResult.multiplier;
 
     if (winType === 'ron') {
@@ -602,6 +635,26 @@ class GameRoom {
       p.waitingTiles = waiting;
     }
 
+    // 确定MVP：赢的一方中番数最高的玩家
+    const winners = this.players.filter(p => p.hasWon);
+    let maxFan = 0;
+    for (const w of winners) {
+      maxFan = Math.max(maxFan, w.lastWinFan || 0);
+    }
+    const mvpSeats = winners.filter(w => (w.lastWinFan || 0) === maxFan).map(w => w.seat);
+
+    // 更新段位（只有真实玩家，AI不更新）
+    const rankUpdates = {};
+    for (const p of this.players) {
+      if (p.username && !p.isAI) {
+        const isWin = p.hasWon;
+        const fan = p.hasWon ? (p.lastWinFan || 1) : 1;
+        const isMVP = mvpSeats.includes(p.seat);
+        const newRank = userStore.updateUserRank(p.username, isWin, fan, isMVP);
+        rankUpdates[p.seat] = newRank;
+      }
+    }
+
     // 结算
     const settleInfo = this.players.map(p => ({
       seat: p.seat,
@@ -612,6 +665,9 @@ class GameRoom {
       hand: p.hand,
       melds: p.melds,
       missingSuit: p.missingSuit,
+      rank: rankUpdates[p.seat] || null,
+      isMVP: mvpSeats.includes(p.seat),
+      fan: p.hasWon ? (p.lastWinFan || 0) : 0,
     }));
 
     // 累计总分

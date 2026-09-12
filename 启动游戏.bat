@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title 耙耳朵麻将馆 - 一键启动
+title 耙耳朵麻将馆 - 一键启动（自动重连版）
 
 echo.
 echo ==================================================
-echo    🀄 耙耳朵麻将馆 - 一键启动
+echo    🀄 耙耳朵麻将馆 - 一键启动（自动重连版）
 echo ==================================================
 echo.
 
@@ -24,16 +24,18 @@ echo.
 echo [2/3] 启动游戏服务器...
 start "麻将馆服务器" /min cmd /c "node server.js"
 timeout /t 2 /nobreak >nul
+echo ✅ 服务器已启动 (http://localhost:3000)
 
 echo.
-echo [3/3] 启动公网隧道...
+echo [3/3] 启动自动重连公网隧道...
 echo.
 echo ==================================================
 echo   🌐 正在获取公网地址，请稍候...
+echo   🔄 隧道断开后会自动重连，无需手动操作
 echo ==================================================
 echo.
 
-ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -R 80:localhost:3000 nokey@localhost.run
+node tunnel.js
 
 echo.
 echo 隧道已关闭，按任意键退出...
