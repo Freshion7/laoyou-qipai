@@ -1,0 +1,20 @@
+{
+  "name": "pa-erduo-mahjong",
+  "version": "1.0.0",
+  "description": "耙耳朵麻将馆 - Q版可爱四川麻将在线联机游戏",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "localtunnel": "^2.0.2"
+  }
+}

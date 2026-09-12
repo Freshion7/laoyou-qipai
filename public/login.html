@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>耙耳朵麻将馆 - 登录</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
+</head>
+<body>
+  <div class="floating-decor" style="top:10%;left:5%;font-size:40px;animation-delay:0s;">🍵</div>
+  <div class="floating-decor" style="top:20%;right:8%;font-size:35px;animation-delay:1s;">🐼</div>
+  <div class="floating-decor" style="bottom:15%;left:10%;font-size:38px;animation-delay:2s;">🌶️</div>
+  <div class="floating-decor" style="bottom:25%;right:5%;font-size:32px;animation-delay:0.5s;">🀄</div>
+
+  <div class="lobby-container" style="justify-content:center;">
+    <div class="lobby-header">
+      <span class="logo-emoji">🀄</span>
+      <h1 class="game-logo">耙耳朵麻将馆</h1>
+      <p class="game-subtitle">登录后开始搓麻</p>
+    </div>
+
+    <!-- 登录表单 -->
+    <div class="card" id="loginCard">
+      <div class="card-title">🔑 登录账号</div>
+      <div class="input-group">
+        <label class="input-label">用户名</label>
+        <input type="text" class="input-field" id="loginUsername" placeholder="输入用户名" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">密码</label>
+        <input type="password" class="input-field" id="loginPassword" placeholder="输入密码" maxlength="32">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">🚀 登录</button>
+      <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-light);">
+        还没有账号？<a href="javascript:showRegister()" style="color:var(--primary);font-weight:700;text-decoration:none;">立即注册</a>
+      </p>
+      <p style="text-align:center;margin-top:8px;font-size:13px;color:var(--text-light);">
+        <a href="javascript:guestLogin()" style="color:var(--text-light);text-decoration:underline;">游客模式体验</a>
+      </p>
+    </div>
+
+    <!-- 注册表单 -->
+    <div class="card" id="registerCard" style="display:none;">
+      <div class="card-title">📝 注册账号</div>
+      <div class="input-group">
+        <label class="input-label">用户名（2-20字符）</label>
+        <input type="text" class="input-field" id="regUsername" placeholder="设置用户名" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">昵称（显示在游戏中）</label>
+        <input type="text" class="input-field" id="regNickname" placeholder="设置昵称" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">密码（4-32字符）</label>
+        <input type="password" class="input-field" id="regPassword" placeholder="设置密码" maxlength="32">
+      </div>
+      <div class="input-group">
+        <label class="input-label">选择头像</label>
+        <div id="regAvatarList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+      <button class="btn btn-green" onclick="doRegister()">✅ 注册并登录</button>
+      <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-light);">
+        已有账号？<a href="javascript:showLogin()" style="color:var(--primary);font-weight:700;text-decoration:none;">返回登录</a>
+      </p>
+    </div>
+
+    <div style="text-align:center;padding:20px;color:var(--text-light);font-size:12px;">
+      耙耳朵麻将馆 v2.0 · 多玩法支持
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>耙耳朵麻将馆</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
+</head>
+<body>
+  <div class="floating-decor" style="top:10%;left:5%;font-size:40px;animation-delay:0s;">🍵</div>
+  <div class="floating-decor" style="top:20%;right:8%;font-size:35px;animation-delay:1s;">🐼</div>
+  <div class="floating-decor" style="bottom:15%;left:10%;font-size:38px;animation-delay:2s;">🌶️</div>
+  <div class="floating-decor" style="bottom:25%;right:5%;font-size:32px;animation-delay:0.5s;">🀄</div>
+
+  <div class="lobby-container">
+    <!-- 标题 -->
+    <div class="lobby-header">
+      <span class="logo-emoji">🀄</span>
+      <h1 class="game-logo">耙耳朵麻将馆</h1>
+      <p class="game-subtitle">多玩法支持 · Q版可爱联机</p>
+    </div>
+
+    <!-- 用户信息 -->
+    <div class="card" id="userCard">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div id="userAvatar" style="font-size:48px;">🐼</div>
+        <div style="flex:1;">
+          <div id="userNickname" style="font-size:18px;font-weight:700;">玩家</div>
+          <div id="userStats" style="font-size:12px;color:var(--text-light);margin-top:4px;">
+            对局 0 · 胜局 0 · 积分 0
+          </div>
+        </div>
+        <button class="btn btn-small btn-outline" onclick="logout()" style="flex-shrink:0;">退出</button>
+      </div>
+    </div>
+
+    <!-- 创建房间 -->
+    <div class="card">
+      <div class="card-title">🏠 创建房间</div>
+      <div class="input-group">
+        <label class="input-label">房间名（可选）</label>
+        <input type="text" class="input-field" id="roomNameInput" placeholder="给房间起个名字，如：老王的麻将局" maxlength="20">
+      </div>
+      <div class="input-group">
+        <label class="input-label">选择玩法</label>
+        <div id="variantList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+      </div>
+      <div id="variantDetail" style="background:var(--bg-warm);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-dark);line-height:1.6;display:none;">
+      </div>
+      <button class="btn btn-primary" onclick="createRoom()">
+        🎲 创建新房间
+      </button>
+    </div>
+
+    <!-- 加入房间 -->
+    <div class="card">
+      <div class="card-title">🚪 加入房间</div>
+      <div class="input-group">
+        <label class="input-label">房间号</label>
+        <input type="text" class="input-field" id="roomCodeInput" placeholder="输入6位房间号" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;text-align:center;font-size:20px;font-weight:700;">
+      </div>
+      <button class="btn btn-secondary" onclick="joinRoom()">
+        🚀 加入房间
+      </button>
+    </div>
+
+    <!-- 快速匹配 -->
+    <div class="card">
+      <div class="card-title">⚡ 快速匹配</div>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
+        查看当前可加入的公开房间
+      </p>
+      <button class="btn btn-green" onclick="showRooms()">
+        🔍 查看房间列表
+      </button>
+      <div id="roomList" style="margin-top:16px;display:none;"></div>
+    </div>
+
+    <!-- 玩法说明 -->
+    <div class="card">
+      <div class="card-title">📖 玩法说明</div>
+      <div style="font-size:13px;line-height:1.8;color:var(--text-dark);">
+        <p><strong>🎯 支持9种麻将玩法</strong></p>
+        <p>• 🌶️ 四川麻将（血战到底）- 缺门、血战、刮风下雨</p>
+        <p>• 🏆 国标麻将 - 8番起和，81种番种</p>
+        <p>• 🥟 广东鸡平胡 - 鸡胡平胡爆胡3番封顶</p>
+        <p>• 🏙️ 广东推倒胡 - 简化规则，只分大小胡</p>
+        <p>• 🌶️ 长沙麻将 - 扎鸟加倍，起手特殊胡</p>
+        <p>• 🏙️ 上海麻将 - 花分勒子，碰碰胡起和</p>
+        <p>• ❄️ 东北麻将 - 先打后抓，宝牌万能</p>
+        <p>• 🏝️ 台湾麻将 - 16张制，眼牌规则</p>
+        <p>• 🏙️ 香港麻将 - 三番起和，十三番封顶</p>
+        <p style="margin-top:8px;"><strong>🍵 特色互动</strong></p>
+        <p>• 喝茶互动、挑衅表情、各地方言</p>
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:20px;color:var(--text-light);font-size:12px;">
+      耙耳朵麻将馆 v2.0 · 多玩法支持
+    </div>
+  </div>
+
+  <!-- 房间创建成功弹窗 -->
+  <div class="dingque-overlay" id="roomCreatedOverlay" style="display:none;">
+    <div class="dingque-panel">
+      <div style="font-size:50px;margin-bottom:10px;">🎉</div>
+      <div class="dingque-title">房间创建成功！</div>
+      <p style="font-size:14px;color:var(--text-light);margin-bottom:8px;">把房间号分享给好友吧</p>
+      <p id="createdVariant" style="font-size:13px;color:var(--primary);font-weight:600;margin-bottom:12px;"></p>
+      <div class="room-code-display">
+        <div class="room-code-label">房间号</div>
+        <div class="room-code" id="createdRoomCode">------</div>
+      </div>
+      <button class="btn btn-primary" onclick="enterGameRoom()">
+        🎮 进入房间
+      </button>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

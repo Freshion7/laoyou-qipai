@@ -1,0 +1,17 @@
+# 耙耳朵麻将馆 - Render 部署配置
+# 在 Render.com 上选择 "New > Web Service"，连接本仓库即可自动部署
+
+services:
+  - type: web
+    name: pa-erduo-mahjong
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    healthCheckPath: /
+    autoDeploy: true

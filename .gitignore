@@ -1,0 +1,7 @@
+node_modules/
+data/
+*.log
+.DS_Store
+cloudflared.exe
+screenshot*.png
+.env

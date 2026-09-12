@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>耙耳朵麻将馆</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🀄</text></svg>">
+</head>
+<body class="game-body">
+  <!-- 竖屏提示 -->
+  <div id="rotateTip" class="rotate-tip">
+    <div class="rotate-icon">📱</div>
+    <div class="rotate-text">请横屏使用<br>获得最佳游戏体验</div>
+  </div>
+
+  <!-- 游戏主容器 -->
+  <div class="game-container" id="gameContainer">
+    <!-- 顶部栏 -->
+    <div class="game-topbar">
+      <div class="topbar-left">
+        <span class="topbar-room" id="roomInfoDisplay">🏠 房间</span>
+        <span class="topbar-variant" id="variantDisplay">🀄 四川麻将</span>
+      </div>
+      <div class="topbar-center" id="gameStatus">等待玩家加入...</div>
+      <div class="topbar-right">
+        <span class="topbar-wall">🀄 <span id="wallTiles">0</span></span>
+        <button class="audio-btn" id="audioBtn" onclick="toggleAudio()" title="音效">🔊</button>
+      </div>
+    </div>
+
+    <!-- 游戏桌面区域 -->
+    <div class="game-table-area">
+      <!-- 对家（顶部） -->
+      <div class="player-slot player-top" id="playerSlot2">
+        <div class="player-info-card" id="playerInfo2">
+          <span class="player-avatar">❓</span>
+          <span class="player-name">等待中</span>
+          <span class="player-score">0</span>
+        </div>
+        <div class="player-hand-back" id="hand2"></div>
+        <div class="player-melds" id="melds2"></div>
+      </div>
+
+      <!-- 左家 -->
+      <div class="player-slot player-left" id="playerSlot3">
+        <div class="player-info-card" id="playerInfo3">
+          <span class="player-avatar">❓</span>
+          <span class="player-name">等待中</span>
+        </div>
+        <div class="player-hand-back vertical" id="hand3"></div>
+      </div>
+
+      <!-- 右家 -->
+      <div class="player-slot player-right" id="playerSlot1">
+        <div class="player-info-card" id="playerInfo1">
+          <span class="player-avatar">❓</span>
+          <span class="player-name">等待中</span>
+        </div>
+        <div class="player-hand-back vertical" id="hand1"></div>
+      </div>
+
+      <!-- 中央弃牌区 -->
+      <div class="discard-center" id="discardArea"></div>
+
+      <!-- 出牌动画层 -->
+      <div class="tile-animation-layer" id="tileAnimLayer"></div>
+    </div>
+
+    <!-- 底部自己的区域 -->
+    <div class="self-area">
+      <!-- 自己的碰/杠牌组 -->
+      <div class="self-melds" id="melds0"></div>
+
+      <!-- 自己的手牌 -->
+      <div class="self-hand" id="hand0"></div>
+
+      <!-- 操作栏 -->
+      <div class="action-bar" id="actionBar">
+        <button class="action-btn hint-btn" id="hintBtn" onclick="showHint()">💡 提示</button>
+        <button class="action-btn discard-btn" id="discardBtn" onclick="confirmDiscard()" style="display:none;">🃏 出牌</button>
+        <div class="action-group" id="actionGroup" style="display:none;">
+          <button class="action-btn win-btn" id="winBtn" onclick="doAction('win')">🀄 胡</button>
+          <button class="action-btn kong-btn" id="kongBtn" onclick="doAction('kong')">📦 杠</button>
+          <button class="action-btn pung-btn" id="pungBtn" onclick="doAction('pung')">🤚 碰</button>
+          <button class="action-btn pass-btn" onclick="doAction('pass')">✋ 过</button>
+        </div>
+      </div>
+
+      <!-- 自己的信息 -->
+      <div class="self-info">
+        <div class="self-info-card" id="playerInfo0">
+          <span class="player-avatar">🐼</span>
+          <span class="player-name">我</span>
+          <span class="player-score">0</span>
+          <span class="self-missing" id="missingSuitDisplay"></span>
+        </div>
+        <div class="self-tools">
+          <button class="tool-btn" onclick="toggleEmotePanel()" title="表情">😜</button>
+          <button class="tool-btn" onclick="togglePhrasePanel()" title="方言">💬</button>
+          <button class="tool-btn" onclick="serveTea()" title="喝茶">🍵</button>
+          <button class="tool-btn" id="destroyRoomBtn" onclick="destroyRoom()" title="解散房间" style="display:none;background:#FFE4E4;">💥</button>
+          <button class="tool-btn" onclick="showRules()" title="规则">📖</button>
+          <button class="tool-btn" onclick="leaveRoom()" title="离开">🚪</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表情面板 -->
+    <div class="emote-panel" id="emotePanel" style="display:none;">
+      <div class="emote-item" onclick="sendEmote('😜')">😜</div>
+      <div class="emote-item" onclick="sendEmote('🤪')">🤪</div>
+      <div class="emote-item" onclick="sendEmote('😎')">😎</div>
+      <div class="emote-item" onclick="sendEmote('😭')">😭</div>
+      <div class="emote-item" onclick="sendEmote('😱')">😱</div>
+      <div class="emote-item" onclick="sendEmote('💪')">💪</div>
+      <div class="emote-item" onclick="sendEmote('👍')">👍</div>
+      <div class="emote-item" onclick="sendEmote('👎')">👎</div>
+      <div class="emote-item" onclick="sendEmote('🔥')">🔥</div>
+      <div class="emote-item" onclick="sendEmote('💩')">💩</div>
+    </div>
+
+    <!-- 方言短语面板 -->
+    <div class="phrase-panel" id="phrasePanel" style="display:none;">
+      <div class="phrase-item" onclick="sendPhrase('要得要得！')">要得要得！👍</div>
+      <div class="phrase-item" onclick="sendPhrase('巴适得板！')">巴适得板！😎</div>
+      <div class="phrase-item" onclick="sendPhrase('你个瓜娃子！')">你个瓜娃子！😜</div>
+      <div class="phrase-item" onclick="sendPhrase('恼火得很哦')">恼火得很哦😩</div>
+      <div class="phrase-item" onclick="sendPhrase('雄起！')">雄起！💪</div>
+      <div class="phrase-item" onclick="sendPhrase('不存在噻')">不存在噻😏</div>
+      <div class="phrase-item" onclick="sendPhrase('搞快点嘛')">搞快点嘛⏰</div>
+      <div class="phrase-item" onclick="sendPhrase('安逸安逸')">安逸安逸😊</div>
+    </div>
+  </div>
+
+  <!-- 定缺弹窗 -->
+  <div class="modal-overlay" id="dingqueOverlay" style="display:none;">
+    <div class="modal-panel">
+      <div class="modal-icon">🎯</div>
+      <div class="modal-title">请定缺</div>
+      <div class="modal-desc">选择一门你不要的花色<br>胡牌时必须缺这一门</div>
+      <div class="suit-options">
+        <div class="suit-option" onclick="chooseDingque('wan')">
+          <span class="suit-icon">🔴</span>
+          <span class="suit-name" style="color:#C62828;">万</span>
+        </div>
+        <div class="suit-option" onclick="chooseDingque('tong')">
+          <span class="suit-icon">🔵</span>
+          <span class="suit-name" style="color:#1565C0;">筒</span>
+        </div>
+        <div class="suit-option" onclick="chooseDingque('tiao')">
+          <span class="suit-icon">🟢</span>
+          <span class="suit-name" style="color:#2E7D32;">条</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 等待界面 -->
+  <div class="modal-overlay" id="waitingOverlay" style="display:flex;">
+    <div class="modal-panel wide">
+      <div class="modal-icon">⏳</div>
+      <div class="modal-title">等待玩家加入</div>
+      <div class="room-code-big">
+        <div class="room-code-label">房间号</div>
+        <div class="room-code-value" id="waitingRoomCode">------</div>
+      </div>
+      <div class="waiting-players" id="waitingPlayerList"></div>
+      <button class="btn btn-primary" id="readyBtn" onclick="playerReady()" style="display:none;margin-top:16px;">
+        ✅ 准备开始
+      </button>
+      <button class="btn btn-green" id="addAiBtn" onclick="addAIPlayer()" style="display:none;margin-top:8px;background:linear-gradient(135deg,#9C27B0,#BA68C8);">
+        🤖 添加人机玩家（管理员）
+      </button>
+      <div class="waiting-tip" id="waitingTip">等待其他玩家加入...</div>
+    </div>
+  </div>
+
+  <!-- 结算弹窗 -->
+  <div class="modal-overlay" id="settleOverlay" style="display:none;">
+    <div class="modal-panel wide">
+      <div class="modal-title" id="settleTitle">本局结算</div>
+      <div id="settlePlayers"></div>
+      <div style="margin-top:20px;display:flex;gap:12px;">
+        <button class="btn btn-outline" onclick="leaveRoom()">离开</button>
+        <button class="btn btn-primary" onclick="nextRound()">下一局</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 玩法选择面板 -->
+  <div class="modal-overlay" id="variantOverlay" style="display:none;">
+    <div class="modal-panel wide">
+      <div class="modal-title">🎮 选择玩法</div>
+      <div class="variant-list" id="variantSelectList"></div>
+      <div class="variant-detail" id="variantSelectDetail" style="display:none;"></div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn btn-outline" onclick="hideVariantPanel()">取消</button>
+        <button class="btn btn-primary" id="confirmVariantBtn" onclick="confirmVariant()" style="display:none;">确认修改</button>
+      </div>
+      <div class="variant-tip" id="variantTip">仅房主可在等待阶段修改玩法</div>
+    </div>
+  </div>
+
+  <!-- 规则弹窗 -->
+  <div class="modal-overlay" id="rulesOverlay" style="display:none;">
+    <div class="modal-panel wide">
+      <div class="modal-title">📖 玩法规则</div>
+      <div class="rules-content" id="rulesContent">
+        <p><strong>🎯 四川麻将·血战到底</strong></p>
+        <p>• 108张牌（万筒条），定缺一门</p>
+        <p>• 只能碰杠，不能吃牌</p>
+        <p>• 一人胡牌后继续，直到只剩1人或流局</p>
+        <p>• 刮风下雨：明杠/暗杠额外计分</p>
+        <p style="margin-top:8px;"><strong>🎮 操作说明</strong></p>
+        <p>• 点击手牌选中，点击「出牌」按钮打出</p>
+        <p>• 有碰/杠/胡机会时按钮自动弹出</p>
+        <p>• 点击「提示」可查看听牌建议</p>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px;" onclick="hideRules()">知道了</button>
+    </div>
+  </div>
+
+  <!-- 胡牌特效 -->
+  <div class="win-effect" id="winEffect" style="display:none;"></div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
