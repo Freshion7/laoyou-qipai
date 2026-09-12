@@ -645,3 +645,129 @@ body {
   color: #666;
   margin-left: 4px;
 }
+
+/* ========== 竖屏模式 ========== */
+body.portrait-mode {
+  overflow-x: hidden;
+}
+
+body.portrait-mode .game-container {
+  width: 100vw;
+  height: 100vh;
+  min-height: auto;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+body.portrait-mode .mahjong-table {
+  width: 100%;
+  height: 50vh;
+  min-height: 300px;
+  margin: 0 auto;
+}
+
+body.portrait-mode .self-hand {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-height: 25vh;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+body.portrait-mode .self-hand .tile {
+  width: 32px;
+  height: 44px;
+  font-size: 16px;
+  margin: 0 1px;
+}
+
+body.portrait-mode .action-bar {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  width: 100%;
+  margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+body.portrait-mode .action-btn {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+body.portrait-mode .voice-control-bar {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  width: 100%;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+body.portrait-mode .player-info {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+body.portrait-mode .player-avatar {
+  font-size: 20px;
+}
+
+body.portrait-mode .top-bar {
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+}
+
+body.portrait-mode .self-tools {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+body.portrait-mode .tool-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+body.portrait-mode .discard-area {
+  min-height: 80px;
+  padding: 8px;
+}
+
+body.portrait-mode .discard-tile {
+  width: 24px;
+  height: 32px;
+  font-size: 12px;
+}
+
+/* 竖屏提示 */
+.orientation-tip {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  z-index: 9999;
+  font-size: 14px;
+}
+
+body.portrait-mode .orientation-tip {
+  display: block;
+}

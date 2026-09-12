@@ -24,15 +24,29 @@
     <!-- 用户信息 -->
     <div class="card" id="userCard">
       <div style="display:flex;align-items:center;gap:16px;">
-        <div id="userAvatar" style="font-size:48px;">🐼</div>
+        <div id="userAvatar" style="font-size:48px;cursor:pointer;" onclick="showProfileEdit()" title="点击编辑资料">🐼</div>
         <div style="flex:1;">
-          <div id="userNickname" style="font-size:18px;font-weight:700;">玩家</div>
+          <div id="userNickname" style="font-size:18px;font-weight:700;cursor:pointer;" onclick="showProfileEdit()">玩家 ✏️</div>
           <div id="userStats" style="font-size:12px;color:var(--text-light);margin-top:4px;">
             对局 0 · 胜局 0 · 积分 0
           </div>
+          <div id="userRank" style="font-size:12px;color:var(--primary);margin-top:2px;font-weight:600;"></div>
         </div>
         <button class="btn btn-small btn-outline" onclick="logout()" style="flex-shrink:0;">退出</button>
       </div>
+    </div>
+
+    <!-- 顶部功能导航 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+      <button class="btn btn-small btn-primary" onclick="showRankings()" style="padding:12px 8px;font-size:14px;">
+        🏆 排行榜
+      </button>
+      <button class="btn btn-small btn-green" onclick="showFriends()" style="padding:12px 8px;font-size:14px;">
+        👥 好友
+      </button>
+      <button class="btn btn-small btn-secondary" onclick="shareGame()" style="padding:12px 8px;font-size:14px;">
+        📤 分享
+      </button>
     </div>
 
     <!-- 创建房间 -->
@@ -77,17 +91,6 @@
       <div id="roomList" style="margin-top:16px;display:none;"></div>
     </div>
 
-    <!-- 排行榜 -->
-    <div class="card">
-      <div class="card-title">🏆 段位排行榜</div>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">
-        查看全服玩家段位排名
-      </p>
-      <button class="btn btn-primary" onclick="showRankings()">
-        🏆 查看排行榜
-      </button>
-    </div>
-
     <!-- 玩法说明 -->
     <div class="card">
       <div class="card-title">📖 玩法说明</div>
@@ -109,6 +112,43 @@
 
     <div style="text-align:center;padding:20px;color:var(--text-light);font-size:12px;">
       老友棋牌 v2.0 · 多玩法支持
+    </div>
+  </div>
+
+  <!-- 个人资料编辑弹窗 -->
+  <div class="dingque-overlay" id="profileEditOverlay" style="display:none;">
+    <div class="dingque-panel">
+      <div style="font-size:40px;margin-bottom:8px;">✏️</div>
+      <div class="dingque-title">编辑个人资料</div>
+      <div class="input-group" style="text-align:left;margin-bottom:16px;">
+        <label class="input-label">昵称</label>
+        <input type="text" class="input-field" id="editNickname" placeholder="输入新昵称" maxlength="20">
+      </div>
+      <div class="input-group" style="text-align:left;margin-bottom:16px;">
+        <label class="input-label">选择头像</label>
+        <div id="editAvatarList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="saveProfile()" style="flex:1;">💾 保存</button>
+        <button class="btn btn-secondary" onclick="closeProfileEdit()" style="flex:1;">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 好友系统弹窗 -->
+  <div class="dingque-overlay" id="friendsOverlay" style="display:none;">
+    <div class="dingque-panel" style="max-width:500px;max-height:80vh;display:flex;flex-direction:column;">
+      <div style="font-size:40px;margin-bottom:8px;">👥</div>
+      <div class="dingque-title">好友系统</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="chat-channel-tab active" id="friendListTab" onclick="switchFriendTab('list')">好友列表</button>
+        <button class="chat-channel-tab" id="friendRequestTab" onclick="switchFriendTab('request')">好友请求</button>
+        <button class="chat-channel-tab" id="friendSearchTab" onclick="switchFriendTab('search')">添加好友</button>
+      </div>
+      <div id="friendsContent" style="flex:1;overflow-y:auto;text-align:left;">
+        <div class="loading-spinner"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="closeFriends()" style="margin-top:12px;">关闭</button>
     </div>
   </div>
 

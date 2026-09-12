@@ -103,6 +103,8 @@
           <span class="self-missing" id="missingSuitDisplay"></span>
         </div>
         <div class="self-tools">
+          <button class="tool-btn" onclick="toggleOrientation()" title="横竖屏切换" id="orientationBtn">🔄</button>
+          <button class="tool-btn" onclick="showInviteFriends()" title="邀请好友">👥</button>
           <button class="tool-btn" onclick="toggleMusicPanel()" title="音乐">🎵</button>
           <button class="tool-btn" id="voiceBtn" onclick="toggleVoice()" title="语音播报">🔊</button>
           <button class="tool-btn" onclick="toggleEmotePanel()" title="表情">😜</button>
@@ -269,6 +271,23 @@
         <span class="music-playing-icon">🎵</span>
         <span id="musicPlayingName">未播放</span>
       </div>
+    </div>
+  </div>
+
+  <!-- 邀请好友弹窗 -->
+  <div class="dingque-overlay" id="inviteOverlay" style="display:none;">
+    <div class="dingque-panel" style="max-width:450px;max-height:70vh;display:flex;flex-direction:column;">
+      <div style="font-size:36px;margin-bottom:8px;">👥</div>
+      <div class="dingque-title">邀请好友</div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--text-light);margin-bottom:8px;">房间号：<strong id="inviteRoomCode" style="color:var(--primary);font-size:16px;"></strong></div>
+        <button class="btn btn-secondary" style="width:100%;padding:8px;font-size:13px;" onclick="copyRoomCode()">📋 复制房间号和链接</button>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dark);margin-bottom:8px;">在线好友</div>
+      <div id="inviteFriendList" style="flex:1;overflow-y:auto;text-align:left;">
+        <div class="loading-spinner"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="closeInviteOverlay()" style="margin-top:12px;">关闭</button>
     </div>
   </div>
 

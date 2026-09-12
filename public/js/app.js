@@ -316,3 +316,275 @@ async function loadRankings() {
     list.innerHTML = '<p style="text-align:center;color:var(--red);">获取排行榜失败</p>';
   }
 }
+
+// ========== 个人资料编辑 ==========
+let editAvatarIndex = 0;
+
+function showProfileEdit() {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  document.getElementById('editNickname').value = userInfo.nickname || '';
+  editAvatarIndex = userInfo.avatar || 0;
+  renderAvatarList('editAvatarList', editAvatarIndex, (idx) => {
+    editAvatarIndex = idx;
+    renderAvatarList('editAvatarList', editAvatarIndex);
+  });
+  document.getElementById('profileEditOverlay').style.display = 'flex';
+}
+
+function closeProfileEdit() {
+  document.getElementById('profileEditOverlay').style.display = 'none';
+}
+
+async function saveProfile() {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  const nickname = document.getElementById('editNickname').value.trim();
+  if (!nickname) {
+    showToast('昵称不能为空');
+    return;
+  }
+  try {
+    const res = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: userInfo.username,
+        token: userInfo.token,
+        nickname,
+        avatar: editAvatarIndex,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      // 更新本地存储
+      userInfo.nickname = data.user.nickname;
+      userInfo.avatar = data.user.avatar;
+      localStorage.setItem('paerduo_user', JSON.stringify(userInfo));
+      // 更新页面显示
+      updateUserDisplay();
+      closeProfileEdit();
+      showToast('资料更新成功');
+    } else {
+      showToast(data.error || '更新失败');
+    }
+  } catch (e) {
+    showToast('更新失败，请重试');
+  }
+}
+
+// ========== 好友系统 ==========
+let currentFriendTab = 'list';
+
+function showFriends() {
+  document.getElementById('friendsOverlay').style.display = 'flex';
+  switchFriendTab('list');
+}
+
+function closeFriends() {
+  document.getElementById('friendsOverlay').style.display = 'none';
+}
+
+function switchFriendTab(tab) {
+  currentFriendTab = tab;
+  document.getElementById('friendListTab').className = tab === 'list' ? 'chat-channel-tab active' : 'chat-channel-tab';
+  document.getElementById('friendRequestTab').className = tab === 'request' ? 'chat-channel-tab active' : 'chat-channel-tab';
+  document.getElementById('friendSearchTab').className = tab === 'search' ? 'chat-channel-tab active' : 'chat-channel-tab';
+
+  if (tab === 'list') loadFriendList();
+  else if (tab === 'request') loadFriendRequests();
+  else if (tab === 'search') showFriendSearch();
+}
+
+async function loadFriendList() {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  const content = document.getElementById('friendsContent');
+  content.innerHTML = '<div class="loading-spinner"></div>';
+  try {
+    const res = await fetch(`/api/friends?username=${encodeURIComponent(userInfo.username)}`);
+    const data = await res.json();
+    if (!data.success || data.friends.length === 0) {
+      content.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">还没有好友，去添加好友吧！</p>';
+      return;
+    }
+    content.innerHTML = data.friends.map(f => `
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE;">
+        <span style="font-size:28px;margin-right:10px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][f.avatar] || '❓'}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;">${f.nickname} ${f.online ? '<span style="color:#4CAF50;font-size:11px;">● 在线</span>' : '<span style="color:#999;font-size:11px;">○ 离线</span>'}</div>
+          <div style="font-size:11px;color:var(--text-light);">${f.rank?.rankIcon || ''} ${f.rank?.rankName || ''}</div>
+        </div>
+        ${f.online ? `<button class="btn btn-small btn-primary" onclick="inviteFriend('${f.username}')" style="padding:6px 10px;font-size:12px;">邀请</button>` : ''}
+        <button class="btn btn-small btn-outline" onclick="removeFriend('${f.username}')" style="padding:6px 10px;font-size:12px;margin-left:6px;">删除</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    content.innerHTML = '<p style="text-align:center;color:var(--red);">获取好友列表失败</p>';
+  }
+}
+
+async function loadFriendRequests() {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  const content = document.getElementById('friendsContent');
+  content.innerHTML = '<div class="loading-spinner"></div>';
+  try {
+    const res = await fetch(`/api/friend-requests?username=${encodeURIComponent(userInfo.username)}`);
+    const data = await res.json();
+    if (!data.success || data.requests.length === 0) {
+      content.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">暂无好友请求</p>';
+      return;
+    }
+    content.innerHTML = data.requests.map(r => `
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE;">
+        <span style="font-size:28px;margin-right:10px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][r.avatar] || '❓'}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;">${r.nickname}</div>
+          <div style="font-size:11px;color:var(--text-light);">${r.from}</div>
+        </div>
+        <button class="btn btn-small btn-green" onclick="acceptFriend('${r.from}')" style="padding:6px 10px;font-size:12px;">接受</button>
+        <button class="btn btn-small btn-outline" onclick="rejectFriend('${r.from}')" style="padding:6px 10px;font-size:12px;margin-left:6px;">拒绝</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    content.innerHTML = '<p style="text-align:center;color:var(--red);">获取好友请求失败</p>';
+  }
+}
+
+function showFriendSearch() {
+  const content = document.getElementById('friendsContent');
+  content.innerHTML = `
+    <div style="padding:12px;">
+      <div class="input-group" style="margin-bottom:12px;">
+        <input type="text" class="input-field" id="friendSearchInput" placeholder="输入用户名或昵称搜索" onkeypress="if(event.key==='Enter')searchFriend()">
+      </div>
+      <button class="btn btn-primary" onclick="searchFriend()" style="width:100%;">🔍 搜索</button>
+      <div id="friendSearchResult" style="margin-top:12px;"></div>
+    </div>
+  `;
+}
+
+async function searchFriend() {
+  const keyword = document.getElementById('friendSearchInput').value.trim();
+  if (!keyword) {
+    showToast('请输入搜索关键词');
+    return;
+  }
+  const resultDiv = document.getElementById('friendSearchResult');
+  resultDiv.innerHTML = '<div class="loading-spinner"></div>';
+  try {
+    const res = await fetch(`/api/search-user?keyword=${encodeURIComponent(keyword)}`);
+    const data = await res.json();
+    if (!data.success || data.users.length === 0) {
+      resultDiv.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">未找到用户</p>';
+      return;
+    }
+    resultDiv.innerHTML = data.users.map(u => `
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE;">
+        <span style="font-size:28px;margin-right:10px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][u.avatar] || '❓'}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;">${u.nickname}</div>
+          <div style="font-size:11px;color:var(--text-light);">${u.username} · ${u.rank?.rankIcon || ''} ${u.rank?.rankName || ''}</div>
+        </div>
+        <button class="btn btn-small btn-primary" onclick="sendFriendRequest('${u.username}')" style="padding:6px 10px;font-size:12px;">添加</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    resultDiv.innerHTML = '<p style="text-align:center;color:var(--red);">搜索失败</p>';
+  }
+}
+
+async function sendFriendRequest(toUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, toUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '好友请求已发送' : (data.error || '发送失败'));
+  } catch (e) {
+    showToast('发送失败');
+  }
+}
+
+async function acceptFriend(fromUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, fromUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已添加好友' : (data.error || '操作失败'));
+    if (data.success) loadFriendRequests();
+  } catch (e) {
+    showToast('操作失败');
+  }
+}
+
+async function rejectFriend(fromUsername) {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, fromUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已拒绝' : (data.error || '操作失败'));
+    if (data.success) loadFriendRequests();
+  } catch (e) {
+    showToast('操作失败');
+  }
+}
+
+async function removeFriend(friendUsername) {
+  if (!confirm('确定要删除这个好友吗？')) return;
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  try {
+    const res = await fetch('/api/friend-remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userInfo.username, token: userInfo.token, friendUsername }),
+    });
+    const data = await res.json();
+    showToast(data.success ? '已删除好友' : (data.error || '操作失败'));
+    if (data.success) loadFriendList();
+  } catch (e) {
+    showToast('操作失败');
+  }
+}
+
+// ========== 分享功能 ==========
+function shareGame() {
+  const shareUrl = window.location.origin;
+  const shareText = `🎮 快来玩【老友棋牌】！多玩法Q版联机麻将，支持语音聊天和好友系统！\n${shareUrl}`;
+
+  if (navigator.share) {
+    navigator.share({
+      title: '老友棋牌',
+      text: shareText,
+      url: shareUrl,
+    }).catch(() => {});
+  } else {
+    // 复制到剪贴板
+    navigator.clipboard.writeText(shareText).then(() => {
+      showToast('分享链接已复制到剪贴板');
+    }).catch(() => {
+      // 降级方案
+      const textarea = document.createElement('textarea');
+      textarea.value = shareText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('分享链接已复制到剪贴板');
+    });
+  }
+}
+
+// 邀请好友进房间（在游戏页面中使用）
+function inviteFriend(friendUsername) {
+  // 这个函数在游戏页面中会被重写，这里只是占位
+  showToast('请在游戏房间中邀请好友');
+}

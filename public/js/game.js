@@ -475,6 +475,10 @@ function handleMessage(type, data) {
       handleSignalingMessage(data);
       break;
 
+    case 'friend_invite':
+      handleFriendInvite(data);
+      break;
+
     case 'state_change':
       gameState = data.state;
       if (data.state === 'rolling') {
@@ -1532,4 +1536,126 @@ function sendSignalingMessage(targetSeat, signal) {
       signal,
     },
   }));
+}
+
+// ========== 横竖屏切换 ==========
+let currentOrientation = 'landscape'; // landscape 或 portrait
+
+function toggleOrientation() {
+  if (currentOrientation === 'landscape') {
+    currentOrientation = 'portrait';
+    document.body.classList.add('portrait-mode');
+    document.body.classList.remove('landscape-mode');
+    document.getElementById('orientationBtn').textContent = '📱';
+    showToast('已切换为竖屏模式');
+  } else {
+    currentOrientation = 'landscape';
+    document.body.classList.add('landscape-mode');
+    document.body.classList.remove('portrait-mode');
+    document.getElementById('orientationBtn').textContent = '🔄';
+    showToast('已切换为横屏模式');
+  }
+  // 保存偏好
+  localStorage.setItem('mahjong_orientation', currentOrientation);
+}
+
+// 初始化横竖屏模式
+function initOrientation() {
+  const saved = localStorage.getItem('mahjong_orientation');
+  if (saved === 'portrait') {
+    currentOrientation = 'portrait';
+    document.body.classList.add('portrait-mode');
+    document.getElementById('orientationBtn').textContent = '📱';
+  } else {
+    currentOrientation = 'landscape';
+    document.body.classList.add('landscape-mode');
+  }
+}
+
+// ========== 邀请好友 ==========
+function showInviteFriends() {
+  document.getElementById('inviteRoomCode').textContent = roomId || '';
+  document.getElementById('inviteOverlay').style.display = 'flex';
+  loadInviteFriends();
+}
+
+function closeInviteOverlay() {
+  document.getElementById('inviteOverlay').style.display = 'none';
+}
+
+function copyRoomCode() {
+  const shareText = `🎮 快来【老友棋牌】找我打麻将！房间号：${roomId}\n${window.location.origin}`;
+  navigator.clipboard.writeText(shareText).then(() => {
+    showToast('房间号和链接已复制');
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = shareText;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('房间号和链接已复制');
+  });
+}
+
+async function loadInviteFriends() {
+  const userInfo = JSON.parse(localStorage.getItem('paerduo_user') || '{}');
+  const list = document.getElementById('inviteFriendList');
+  list.innerHTML = '<div class="loading-spinner"></div>';
+  try {
+    const res = await fetch(`/api/friends?username=${encodeURIComponent(userInfo.username)}`);
+    const data = await res.json();
+    if (!data.success || data.friends.length === 0) {
+      list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">还没有在线好友<br>先复制房间号分享给朋友吧！</p>';
+      return;
+    }
+    const onlineFriends = data.friends.filter(f => f.online);
+    if (onlineFriends.length === 0) {
+      list.innerHTML = '<p style="text-align:center;color:var(--text-light);padding:20px;">暂无在线好友<br>先复制房间号分享给朋友吧！</p>';
+      return;
+    }
+    list.innerHTML = onlineFriends.map(f => `
+      <div style="display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid #EEE;">
+        <span style="font-size:28px;margin-right:10px;">${['🐱','🐶','🐰','🐼','🦊','🐨','🐯','🦁','🐮','🐷','🐸','🐵'][f.avatar] || '❓'}</span>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;">${f.nickname} <span style="color:#4CAF50;font-size:11px;">● 在线</span></div>
+          <div style="font-size:11px;color:var(--text-light);">${f.rank?.rankIcon || ''} ${f.rank?.rankName || ''}</div>
+        </div>
+        <button class="btn btn-small btn-primary" onclick="inviteFriendToRoom('${f.username}')" style="padding:6px 12px;font-size:12px;">邀请</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = '<p style="text-align:center;color:var(--red);">获取好友列表失败</p>';
+  }
+}
+
+function inviteFriendToRoom(friendUsername) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    showToast('连接已断开');
+    return;
+  }
+  ws.send(JSON.stringify({
+    type: 'invite_friend',
+    payload: { friendUsername },
+  }));
+  showToast('邀请已发送');
+}
+
+// 处理好友邀请通知
+function handleFriendInvite(data) {
+  if (confirm(`${data.fromNickname} 邀请你加入房间【${data.roomName}】，房间号：${data.roomId}，是否加入？`)) {
+    // 加入房间
+    sessionStorage.setItem('paerduo_room', JSON.stringify({
+      roomId: data.roomId,
+      roomName: data.roomName,
+    }));
+    window.location.href = 'game.html';
+  }
+}
+
+// 页面加载完成后初始化横竖屏模式
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initOrientation);
+} else {
+  initOrientation();
 }

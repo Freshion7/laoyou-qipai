@@ -23,6 +23,9 @@ app.use(express.json());
 const rooms = new Map(); // roomId -> GameRoom
 const playerRooms = new Map(); // playerId -> roomId
 
+// 在线用户集合（username -> { ws, playerId, roomId }）
+const onlineUsers = new Map();
+
 // 生成房间号
 function generateRoomId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -57,6 +60,82 @@ app.post('/api/profile', (req, res) => {
   }
   const result = userStore.updateProfile(username, { nickname, avatar, password });
   res.json(result);
+});
+
+// ========== 好友系统API ==========
+
+// 获取好友列表
+app.get('/api/friends', (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.json({ success: false, error: '参数错误' });
+  const onlineSet = new Set(onlineUsers.keys());
+  const friends = userStore.getFriends(username, onlineSet);
+  res.json({ success: true, friends });
+});
+
+// 获取好友请求
+app.get('/api/friend-requests', (req, res) => {
+  const { username } = req.query;
+  if (!username) return res.json({ success: false, error: '参数错误' });
+  const requests = userStore.getFriendRequests(username);
+  res.json({ success: true, requests });
+});
+
+// 发送好友请求
+app.post('/api/friend-request', (req, res) => {
+  const { username, token, toUsername } = req.body || {};
+  if (!userStore.verifyToken(username, token)) {
+    return res.json({ success: false, error: '登录已过期' });
+  }
+  const result = userStore.sendFriendRequest(username, toUsername);
+  res.json(result);
+});
+
+// 接受好友请求
+app.post('/api/friend-accept', (req, res) => {
+  const { username, token, fromUsername } = req.body || {};
+  if (!userStore.verifyToken(username, token)) {
+    return res.json({ success: false, error: '登录已过期' });
+  }
+  const result = userStore.acceptFriendRequest(username, fromUsername);
+  res.json(result);
+});
+
+// 拒绝好友请求
+app.post('/api/friend-reject', (req, res) => {
+  const { username, token, fromUsername } = req.body || {};
+  if (!userStore.verifyToken(username, token)) {
+    return res.json({ success: false, error: '登录已过期' });
+  }
+  const result = userStore.rejectFriendRequest(username, fromUsername);
+  res.json(result);
+});
+
+// 删除好友
+app.post('/api/friend-remove', (req, res) => {
+  const { username, token, friendUsername } = req.body || {};
+  if (!userStore.verifyToken(username, token)) {
+    return res.json({ success: false, error: '登录已过期' });
+  }
+  const result = userStore.removeFriend(username, friendUsername);
+  res.json(result);
+});
+
+// 搜索用户
+app.get('/api/search-user', (req, res) => {
+  const { keyword } = req.query;
+  if (!keyword) return res.json({ success: false, error: '请输入搜索关键词' });
+  const users = userStore.loadUsers();
+  const results = Object.values(users)
+    .filter(u => u.username.includes(keyword) || (u.nickname && u.nickname.includes(keyword)))
+    .slice(0, 10)
+    .map(u => ({
+      username: u.username,
+      nickname: u.nickname,
+      avatar: u.avatar,
+      rank: userStore.getRankInfo(u.rank),
+    }));
+  res.json({ success: true, users: results });
 });
 
 // ========== 玩法API ==========
@@ -194,6 +273,11 @@ wss.on('connection', (ws, req) => {
         currentRoom = room;
         playerRooms.set(playerId, roomId);
 
+        // 记录用户在线状态
+        if (username) {
+          onlineUsers.set(username, { ws, playerId, roomId });
+        }
+
         // 发送加入成功
         player.send('joined', {
           seat: player.seat,
@@ -326,6 +410,24 @@ wss.on('connection', (ws, req) => {
         break;
       }
 
+      case 'invite_friend': {
+        if (!currentPlayer || !currentRoom) return;
+        const { friendUsername } = payload;
+        // 给好友发送邀请通知
+        const friend = onlineUsers.get(friendUsername);
+        if (friend && friend.ws && friend.ws.readyState === 1) {
+          friend.ws.send(JSON.stringify({
+            type: 'friend_invite',
+            fromUsername: currentPlayer.username,
+            fromNickname: currentPlayer.name,
+            fromAvatar: currentPlayer.avatar,
+            roomId: currentRoom.roomId,
+            roomName: currentRoom.roomName,
+          }));
+        }
+        break;
+      }
+
       case 'emote': {
         if (!currentPlayer || !currentRoom) return;
         const { emote } = payload;
@@ -430,6 +532,11 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
+    // 移除用户在线状态
+    if (currentPlayer?.username) {
+      onlineUsers.delete(currentPlayer.username);
+    }
+
     if (currentPlayer && currentRoom) {
       currentPlayer.ws = null;
 

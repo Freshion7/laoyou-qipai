@@ -226,6 +226,8 @@ function register(username, password, nickname, avatar) {
     totalScore: 0,
     bestFan: 0,
     rank: initRank(), // 段位系统
+    friends: [], // 好友列表
+    friendRequests: [], // 收到的好友请求
   };
 
   users[username] = user;
@@ -412,6 +414,114 @@ function updateProfile(username, updates) {
   };
 }
 
+// ========== 好友系统 ==========
+
+// 发送好友请求
+function sendFriendRequest(fromUsername, toUsername) {
+  const users = loadUsers();
+  if (!users[fromUsername] || !users[toUsername]) {
+    return { success: false, error: '用户不存在' };
+  }
+  if (fromUsername === toUsername) {
+    return { success: false, error: '不能添加自己为好友' };
+  }
+  // 检查是否已经是好友
+  if (users[fromUsername].friends?.includes(toUsername)) {
+    return { success: false, error: '已经是好友了' };
+  }
+  // 检查是否已经发送过请求
+  if (users[toUsername].friendRequests?.some(r => r.from === fromUsername)) {
+    return { success: false, error: '已发送过好友请求' };
+  }
+
+  if (!users[toUsername].friendRequests) users[toUsername].friendRequests = [];
+  users[toUsername].friendRequests.push({
+    from: fromUsername,
+    nickname: users[fromUsername].nickname,
+    avatar: users[fromUsername].avatar,
+    time: Date.now(),
+  });
+
+  saveUsers(users);
+  return { success: true, message: '好友请求已发送' };
+}
+
+// 接受好友请求
+function acceptFriendRequest(username, fromUsername) {
+  const users = loadUsers();
+  if (!users[username] || !users[fromUsername]) {
+    return { success: false, error: '用户不存在' };
+  }
+
+  // 移除请求
+  users[username].friendRequests = (users[username].friendRequests || []).filter(r => r.from !== fromUsername);
+
+  // 互相添加为好友
+  if (!users[username].friends) users[username].friends = [];
+  if (!users[fromUsername].friends) users[fromUsername].friends = [];
+
+  if (!users[username].friends.includes(fromUsername)) {
+    users[username].friends.push(fromUsername);
+  }
+  if (!users[fromUsername].friends.includes(username)) {
+    users[fromUsername].friends.push(username);
+  }
+
+  saveUsers(users);
+  return { success: true, message: '已添加好友' };
+}
+
+// 拒绝好友请求
+function rejectFriendRequest(username, fromUsername) {
+  const users = loadUsers();
+  if (!users[username]) return { success: false, error: '用户不存在' };
+
+  users[username].friendRequests = (users[username].friendRequests || []).filter(r => r.from !== fromUsername);
+  saveUsers(users);
+  return { success: true, message: '已拒绝好友请求' };
+}
+
+// 删除好友
+function removeFriend(username, friendUsername) {
+  const users = loadUsers();
+  if (!users[username] || !users[friendUsername]) {
+    return { success: false, error: '用户不存在' };
+  }
+
+  users[username].friends = (users[username].friends || []).filter(f => f !== friendUsername);
+  users[friendUsername].friends = (users[friendUsername].friends || []).filter(f => f !== username);
+
+  saveUsers(users);
+  return { success: true, message: '已删除好友' };
+}
+
+// 获取好友列表（包含在线状态，需要传入在线用户集合）
+function getFriends(username, onlineUsers = new Set()) {
+  const users = loadUsers();
+  const user = users[username];
+  if (!user) return [];
+
+  return (user.friends || []).map(friendUsername => {
+    const friend = users[friendUsername];
+    if (!friend) return null;
+    return {
+      username: friendUsername,
+      nickname: friend.nickname,
+      avatar: friend.avatar,
+      online: onlineUsers.has(friendUsername),
+      rank: getRankInfo(friend.rank),
+    };
+  }).filter(Boolean);
+}
+
+// 获取好友请求列表
+function getFriendRequests(username) {
+  const users = loadUsers();
+  const user = users[username];
+  if (!user) return [];
+  return user.friendRequests || [];
+}
+
 module.exports = {
   register,
   login,
@@ -426,4 +536,10 @@ module.exports = {
   getRankInfo,
   getRankings,
   RANKS,
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  removeFriend,
+  getFriends,
+  getFriendRequests,
 };
