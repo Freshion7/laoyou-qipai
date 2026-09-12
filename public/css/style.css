@@ -134,11 +134,6 @@ body {
 }
 .rotate-tip .rotate-text { font-size: 18px; text-align: center; margin-top: 20px; line-height: 1.6; }
 
-@media (orientation: portrait) and (max-width: 900px) {
-  .rotate-tip { display: flex; }
-  .game-container { display: none !important; }
-}
-
 /* 游戏主容器 */
 .game-container {
   width: 100vw; height: 100vh; position: relative; overflow: hidden;
